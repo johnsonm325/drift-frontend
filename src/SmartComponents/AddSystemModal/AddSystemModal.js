@@ -10,6 +10,7 @@ import SystemsTable from '../SystemsTable/SystemsTable';
 import BaselinesTable from '../BaselinesTable/BaselinesTable';
 import GlobalFilterAlert from '../GlobalFilterAlert/GlobalFilterAlert';
 import SelectedBasket from './SelectedBasket/SelectedBasket';
+import DriftTooltip from '../DriftTooltip/DriftTooltip';
 import { addSystemModalActions } from './redux';
 import { baselinesTableActions } from '../BaselinesTable/redux';
 import { historicProfilesActions } from '../HistoricalProfilesPopover/redux';
@@ -43,12 +44,24 @@ export class AddSystemModal extends Component {
         });
     }
 
+    createContent = (id, content, body, name) => {
+        return {
+            id,
+            icon: <DriftTooltip
+                content={ content }
+                body={ body }
+            />,
+            name
+        };
+    }
+
     /*eslint-disable camelcase*/
     componentDidUpdate(prevProps) {
         const { baselines, handleBaselineSelection, handleHSPSelection, handleSystemSelection, historicalProfiles,
             selectedBaselineContent, selectedHSPContent, selectedSystemContent, systems } = this.props;
         let newSelectedSystems = [];
         let newSelectedBaselines = [];
+        let createContentFunc = this.createContent;
 
         if (!prevProps.addSystemModalOpened && this.props.addSystemModalOpened) {
             this.setSelectedContent();
@@ -57,13 +70,13 @@ export class AddSystemModal extends Component {
         if ((baselines.length || historicalProfiles.length || systems.length)
             && (!selectedBaselineContent.length && !selectedHSPContent.length && !selectedSystemContent.length)) {
             newSelectedSystems = systems.map(function(system) {
-                return { id: system.id, icon: <ServerIcon />, name: system.display_name };
+                return createContentFunc(system.id, 'System', <ServerIcon />, system.display_name);
             });
 
             handleSystemSelection(newSelectedSystems, true);
 
             newSelectedBaselines = baselines.map(function(baseline) {
-                return { id: baseline.id, icon: <BlueprintIcon />, name: baseline.display_name };
+                return createContentFunc(baseline.id, 'Baseline', <BlueprintIcon />, baseline.display_name);
             });
 
             handleBaselineSelection(newSelectedBaselines, true);
@@ -94,6 +107,7 @@ export class AddSystemModal extends Component {
         const { baselineTableData, handleBaselineSelection, selectBaseline } = this.props;
         let ids;
         let selectedContent = [];
+        let createContentFunc = this.createContent;
 
         if (rowId === -1) {
             ids = baselineTableData.map(function(item) {
@@ -101,14 +115,14 @@ export class AddSystemModal extends Component {
             });
 
             selectedContent = baselineTableData.map(function(item) {
-                return { id: item[0], icon: <BlueprintIcon />, name: item[1] };
+                return createContentFunc(item[0], 'Baseline', <BlueprintIcon />, item[1]);
             });
         } else {
             ids = [ baselineTableData[rowId][0] ];
 
-            selectedContent.push({
-                id: baselineTableData[rowId][0], icon: <BlueprintIcon />, name: baselineTableData[rowId][1]
-            });
+            selectedContent.push(
+                this.createContent(baselineTableData[rowId][0], 'Baseline', <BlueprintIcon />, baselineTableData[rowId][1])
+            );
         }
 
         selectBaseline(ids, isSelected, 'COMPARISON');
@@ -168,13 +182,14 @@ export class AddSystemModal extends Component {
         const { baselineTableData, handleBaselineSelection, selectBaseline } = this.props;
         let ids = [];
         let selectedContent = [];
+        let createContentFunc = this.createContent;
 
         baselineTableData.forEach(function(baseline) {
             ids.push(baseline[0]);
         });
 
         selectedContent = baselineTableData.map(function(baseline) {
-            return { id: baseline[0], icon: <BlueprintIcon />, name: baseline[1] };
+            return createContentFunc(baseline[0], 'Baseline', <BlueprintIcon />, baseline[1]);
         });
 
         selectBaseline(ids, isSelected, 'COMPARISON');
@@ -184,13 +199,14 @@ export class AddSystemModal extends Component {
     systemContentSelect = (data) => {
         const { entities, handleSystemSelection, selectedSystemContent } = this.props;
         let selectedSystems = [];
+        let createContentFunc = this.createContent;
 
         if (data.id === 0) {
             if (data.bulk) {
                 selectedSystems = selectedSystemContent;
             } else {
                 selectedSystems = entities.rows.map(function(row) {
-                    return { id: row.id, name: row.display_name, icon: <ServerIcon /> };
+                    return createContentFunc(row.id, 'System', <ServerIcon />, row.display_name);
                 });
             }
         } else {
@@ -199,7 +215,14 @@ export class AddSystemModal extends Component {
             } else {
                 entities.rows.forEach(function(row) {
                     if (row.id === data.id) {
-                        selectedSystems.push({ id: row.id, name: row.display_name, icon: <ServerIcon /> });
+                        selectedSystems.push({
+                            id: row.id,
+                            name: row.display_name,
+                            icon: <DriftTooltip
+                                content='System'
+                                body={ <ServerIcon /> }
+                            />
+                        });
                     }
                 });
             }
